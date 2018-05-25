@@ -17,13 +17,17 @@ Created on Wed Sep 20 10:40:51 2017
 #                       in other words, sets the threshold for what is 
 #                       considered an unchanged pixel
 #n_pixels_threshold:    Decides how many pixels can be above "black_threshold"
+#freeze_threshold:      Decides how many consecutive "frozen" frames consititutes
+#                       a true freeze event
 
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
+import pandas as pd
+import math
 
 #read in first n frames of video
-cap = cv2.VideoCapture("/Users/piperkeyes/Desktop/fc_test_tone.mp4")
+cap = cv2.VideoCapture("/Users/piperkeyes/Desktop/fc_test_notone.mp4")
 n_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 prev_frames = []
 n_prev_frames = 3
@@ -40,8 +44,11 @@ diff_frames = []
 #threshold params
 black_threshold = 20
 n_pixels_threshold = 100
+fps = math.ceil(cap.get(cv2.CAP_PROP_FPS))
+freeze_threshold = fps/2 #set to .5 seconds
 
 #text params
+suffix = "_notone"
 placement = (20,20)
 font = cv2.FONT_HERSHEY_SIMPLEX
 font_size = 1
@@ -51,7 +58,7 @@ count = 0
 
 #read in the video frame by frame and decide whether mouse is not moving ("frozen")
 for frame_n in range(n_frames - n_prev_frames):
-    print(count)
+    #print(count)
     ret, frame = cap.read()
     frame = cv2.GaussianBlur(frame, (5,5), 0)
     diff = cv2.absdiff(frame,prev_frames[0])
@@ -72,7 +79,7 @@ for frame_n in range(n_frames - n_prev_frames):
     
     #if the number of "non-black" pixels is less than the threshold
     if n_diff_pixels < n_pixels_threshold: 
-        print("frozen")
+        #print("frozen")
         overlay = frame.copy()
         cv2.putText(overlay,"freezing", placement, font, font_size, color, line_type)
         cv2.imshow("frame", overlay)
@@ -87,7 +94,8 @@ cap.release()
 cv2.destroyAllWindows()
 cv2.waitKey(1)
 
-#analysis
+
+#un-thresholded analysis
 freeze_epochs = []
 freeze_frames = 0
 for i in range(len(diff_bool)):
@@ -99,13 +107,57 @@ for i in range(len(diff_bool)):
     else:
         if freeze_frames > 0: freeze_epochs.append(freeze_frames)
         freeze_frames = 0
+
+#thresholded analysis
+#remove freeze epochs of fewer consequtive freeze_frames than freeze_threshold
+diff_indices_thresholded = []
+start_index = 1
+count = 0
+for i in range(1,len(diff_indices)):
+    if diff_indices[i] - diff_indices[i-1] == 1: count += 1
+    else:
+        if count > freeze_threshold:
+            for frame in diff_indices[start_index:i]:
+                diff_indices_thresholded.append(frame)
+        start_index = i
+        count = 0
+freeze_epochs = np.array(freeze_epochs)
+freeze_epochs_thresholded = freeze_epochs[freeze_epochs > freeze_threshold]
+
         
-#plot freeze epochs
+#plot freeze epochs un-thresholded
 fig = plt.figure()
-plt.eventplot(diff_indices,lineoffsets = -100, linelengths = .1)
-plt.xlabel('Frame')
+plt.eventplot(diff_indices,lineoffsets=0, linelengths=.1)
+plt.xlabel("Frame")
 plt.xticks([0,100,200,300,400,500,600,700,800,900])
 plt.yticks([])
 fig.set_size_inches(10,10)
-fig.savefig('test.png')
+fig.savefig("freezing_eventplot" + suffix + ".eps", transparent=True, format="eps", dpi=1000)
+
+#plot freeze epochs thresholded
+fig = plt.figure()
+plt.eventplot(diff_indices_thresholded,lineoffsets=0, linelengths=.1)
+plt.xlabel("Frame")
+plt.xticks([0,100,200,300,400,500,600,700,800,900])
+plt.yticks([])
+fig.set_size_inches(10,10)
+fig.savefig("freezing_eventplot_thresholded" + suffix + ".eps", transparent=True, format="eps", dpi=1000)
+
+#convert data to dataframes
+#un-thresholded
+df_frames = pd.DataFrame(np.array(diff_indices))
+df_frames.columns = ["Frame"]
+df_epochs = pd.DataFrame(np.array(freeze_epochs))
+df_epochs.columns = ["Duration in frames"]
+#thresholded
+df_frames_thresholded = pd.DataFrame(np.array(diff_indices_thresholded))
+df_frames_thresholded.columns = ["Frame"]
+df_epochs_thresholded = pd.DataFrame(np.array(freeze_epochs_thresholded))
+df_epochs_thresholded.columns = ["Duration in frames"]
+
+#write dataframes to csv
+df_frames.to_csv("freeze_frames" + suffix + ".csv")
+df_epochs.to_csv("freeze_epochs" + suffix + ".csv")
+df_frames_thresholded.to_csv("freeze_frames_thresholded" + suffix + ".csv")
+df_epochs_thresholded.to_csv("freeze_epochs_thresholded" + suffix + ".csv")
     
