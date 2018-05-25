@@ -26,9 +26,21 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import math
 
-#read in first n frames of video
-cap = cv2.VideoCapture("/Users/piperkeyes/Desktop/fc_test_notone.mp4")
+#open video file
+path = input("Enter video path: ")
+cap = cv2.VideoCapture(path)
+
+#get user input about file names
+subject = input("Subject id: ") + "_"
+trial_type = input("Tone or no tone trial (type 'tone' or 'notone'): ") + "_"
+trial_n = "trial" + input("Trial number: ")
+prefix = subject + trial_type + trial_n
+
+#video file metadata
 n_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+fps = math.ceil(cap.get(cv2.CAP_PROP_FPS))
+
+#read in first n frames of video
 prev_frames = []
 n_prev_frames = 3
 for i in range(0,n_prev_frames):
@@ -44,12 +56,10 @@ diff_frames = []
 #threshold params
 black_threshold = 20
 n_pixels_threshold = 100
-fps = math.ceil(cap.get(cv2.CAP_PROP_FPS))
 freeze_threshold = fps/2 #set to .5 seconds
 
 #text params
-suffix = "_notone"
-placement = (20,20)
+placement = (20,30)
 font = cv2.FONT_HERSHEY_SIMPLEX
 font_size = 1
 color = (255,255,255)
@@ -66,7 +76,6 @@ for frame_n in range(n_frames - n_prev_frames):
     cv2.imshow("subtraction", diff)
     if count == 0: cv2.waitKey(5000)    #pauses video so user has time to move windows
 
-    
     #update which frames will be used as "prev_frame"
     prev_frames = prev_frames[1:]
     prev_frames.append(frame)
@@ -93,7 +102,6 @@ for frame_n in range(n_frames - n_prev_frames):
 cap.release()
 cv2.destroyAllWindows()
 cv2.waitKey(1)
-
 
 #un-thresholded analysis
 freeze_epochs = []
@@ -123,8 +131,8 @@ for i in range(1,len(diff_indices)):
         count = 0
 freeze_epochs = np.array(freeze_epochs)
 freeze_epochs_thresholded = freeze_epochs[freeze_epochs > freeze_threshold]
-
-        
+    
+#TODO:make xticks dynamic based on length of video fed in
 #plot freeze epochs un-thresholded
 fig = plt.figure()
 plt.eventplot(diff_indices,lineoffsets=0, linelengths=.1)
@@ -132,7 +140,7 @@ plt.xlabel("Frame")
 plt.xticks([0,100,200,300,400,500,600,700,800,900])
 plt.yticks([])
 fig.set_size_inches(10,10)
-fig.savefig("freezing_eventplot" + suffix + ".eps", transparent=True, format="eps", dpi=1000)
+fig.savefig(prefix + "freezing_eventplot.eps", transparent=True, format="eps", dpi=1000)
 
 #plot freeze epochs thresholded
 fig = plt.figure()
@@ -141,7 +149,14 @@ plt.xlabel("Frame")
 plt.xticks([0,100,200,300,400,500,600,700,800,900])
 plt.yticks([])
 fig.set_size_inches(10,10)
-fig.savefig("freezing_eventplot_thresholded" + suffix + ".eps", transparent=True, format="eps", dpi=1000)
+fig.savefig(prefix + "freezing_eventplot_thresholded.eps", transparent=True, format="eps", dpi=1000)
+
+#create metadata
+metadata = {}
+metadata["total frames"] = n_frames
+metadata["frames per second"] = fps
+metadata["frozen frames"] = np.sum(np.array(freeze_epochs))
+metadata["frozen frames thresholded"] = np.sum(np.array(freeze_epochs_thresholded))
 
 #convert data to dataframes
 #un-thresholded
@@ -154,10 +169,13 @@ df_frames_thresholded = pd.DataFrame(np.array(diff_indices_thresholded))
 df_frames_thresholded.columns = ["Frame"]
 df_epochs_thresholded = pd.DataFrame(np.array(freeze_epochs_thresholded))
 df_epochs_thresholded.columns = ["Duration in frames"]
+#metadata
+df_meta = pd.DataFrame.from_dict(metadata, orient="index")
 
 #write dataframes to csv
-df_frames.to_csv("freeze_frames" + suffix + ".csv")
-df_epochs.to_csv("freeze_epochs" + suffix + ".csv")
-df_frames_thresholded.to_csv("freeze_frames_thresholded" + suffix + ".csv")
-df_epochs_thresholded.to_csv("freeze_epochs_thresholded" + suffix + ".csv")
+df_frames.to_csv(prefix + "freeze_frames.csv")
+df_epochs.to_csv(prefix + "freeze_epochs.csv")
+df_frames_thresholded.to_csv(prefix + "freeze_frames_thresholded.csv")
+df_epochs_thresholded.to_csv(prefix + "freeze_epochs_thresholded.csv")
+df_meta.to_csv(prefix + "metadata.csv")
     
