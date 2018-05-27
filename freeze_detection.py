@@ -136,19 +136,21 @@ freeze_epochs_thresholded = freeze_epochs[freeze_epochs > freeze_threshold]
 #plot freeze epochs un-thresholded
 fig = plt.figure()
 plt.eventplot(diff_indices,lineoffsets=0, linelengths=.1)
+fig.set_size_inches(10,10)
+plt.autoscale(enable=True, axis='x', tight=True)
 plt.xlabel("Frame")
 plt.xticks([0,100,200,300,400,500,600,700,800,900])
 plt.yticks([])
-fig.set_size_inches(10,10)
 fig.savefig(prefix + "freezing_eventplot.eps", transparent=True, format="eps", dpi=1000)
 
 #plot freeze epochs thresholded
 fig = plt.figure()
 plt.eventplot(diff_indices_thresholded,lineoffsets=0, linelengths=.1)
+fig.set_size_inches(10,10)
+plt.autoscale(enable=True, axis='x', tight=True)
 plt.xlabel("Frame")
 plt.xticks([0,100,200,300,400,500,600,700,800,900])
 plt.yticks([])
-fig.set_size_inches(10,10)
 fig.savefig(prefix + "freezing_eventplot_thresholded.eps", transparent=True, format="eps", dpi=1000)
 
 #create metadata
