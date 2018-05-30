@@ -1,5 +1,5 @@
 # FreezeTracker
-Detects freezing behavior in mice
+Detects freezing behavior
 
 This program runs correctly using the following libraries on an OSX 10.13.4 system:
 Python3,
