@@ -27,25 +27,28 @@ import pandas as pd
 import math
 
 #open video file
-path = input("Enter video path: ")
+path = input("Enter video path (enclosed in ''): ")
 cap = cv2.VideoCapture(path)
 
 #get user input about file names
-subject = input("Subject id: ") + "_"
+prefix = input("Enter descriptive title for analysis files (enclosed in ''): ")
+subject = input("Subject id (enclosed in ''): ") + "_"
 trial_type = input("Tone or no tone trial (type 'tone' or 'notone'): ") + "_"
-trial_n = "trial" + input("Trial number: ")
+trial_n = "trial" + input("Trial number (enclosed in ''): ")
 prefix = subject + trial_type + trial_n
 
 #video file metadata
 n_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 fps = math.ceil(cap.get(cv2.CAP_PROP_FPS))
+width = cap.get(3)
+height = cap.get(4)
 
 #read in first n frames of video
 prev_frames = []
 n_prev_frames = 3
 for i in range(0,n_prev_frames):
     ret, frame = cap.read()
-    frame = cv2.GaussianBlur(frame, (5,5), 0)
+    #frame = cv2.GaussianBlur(frame, (5,5), 0)
     prev_frames.append(frame)
     
 #lists to store freezing data
@@ -55,7 +58,7 @@ diff_frames = []
 
 #threshold params
 black_threshold = 20
-n_pixels_threshold = 100
+n_pixels_threshold = (height * width) * 0.0005  #set to .05% of pixels
 freeze_threshold = fps/2 #set to .5 seconds
 
 #text params
@@ -67,13 +70,16 @@ line_type = 2
 count = 0
 
 #read in the video frame by frame and decide whether mouse is not moving ("frozen")
+cv2.namedWindow("frame")
+cv2.namedWindow("subtraction")
+cv2.startWindowThread()
 for frame_n in range(n_frames - n_prev_frames):
     #print(count)
     ret, frame = cap.read()
     frame = cv2.GaussianBlur(frame, (5,5), 0)
     diff = cv2.absdiff(frame,prev_frames[0])
     cv2.imshow("frame", frame)
-    cv2.imshow("subtraction", diff)
+    #cv2.imshow("subtraction", diff)
     if count == 0: cv2.waitKey(5000)    #pauses video so user has time to move windows
 
     #update which frames will be used as "prev_frame"
@@ -88,7 +94,6 @@ for frame_n in range(n_frames - n_prev_frames):
     
     #if the number of "non-black" pixels is less than the threshold
     if n_diff_pixels < n_pixels_threshold: 
-        #print("frozen")
         overlay = frame.copy()
         cv2.putText(overlay,"freezing", placement, font, font_size, color, line_type)
         cv2.imshow("frame", overlay)
@@ -100,8 +105,16 @@ for frame_n in range(n_frames - n_prev_frames):
         break
 
 cap.release()
-cv2.destroyAllWindows()
+cv2.destroyWindow("frame")
 cv2.waitKey(1)
+cv2.waitKey(1)
+cv2.waitKey(1)
+cv2.waitKey(1)
+#cv2.destroyWindow("subtraction")
+#cv2.waitKey(1)
+#cv2.waitKey(1)
+#cv2.waitKey(1)
+#cv2.waitKey(1)
 
 #un-thresholded analysis
 freeze_epochs = []
