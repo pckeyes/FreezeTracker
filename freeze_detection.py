@@ -67,7 +67,7 @@ count = 0
 
 #read in the video frame by frame and decide whether mouse is not moving ("frozen")
 cv2.namedWindow("frame")
-cv2.namedWindow("subtraction")
+#cv2.namedWindow("subtraction")
 cv2.startWindowThread()
 for frame_n in range(n_frames - n_prev_frames):
     #print(count)
