@@ -32,10 +32,6 @@ cap = cv2.VideoCapture(path)
 
 #get user input about file names
 prefix = input("Enter descriptive title for analysis files (enclosed in ''): ")
-subject = input("Subject id (enclosed in ''): ") + "_"
-trial_type = input("Tone or no tone trial (type 'tone' or 'notone'): ") + "_"
-trial_n = "trial" + input("Trial number (enclosed in ''): ")
-prefix = subject + trial_type + trial_n
 
 #video file metadata
 n_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
